@@ -4,80 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TaskMaster Pro</title>
-    <!-- Core Libraries -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://accounts.google.com/gsi/client"></script>
-    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #f8fafc; 
-            color: #0f172a; 
-            margin: 0; 
-            padding: 0;
-            overscroll-behavior: none;
-        }
-        .spinner { 
-            border: 3px solid rgba(255,255,255,0.2); 
-            border-top-color: #fff; 
-            border-radius: 50%; 
-            width: 18px; 
-            height: 18px; 
-            animation: spin 0.8s linear infinite; 
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #0f172a; margin: 0; }
+        .spinner { border: 3px solid rgba(79, 70, 229, 0.2); border-top-color: #4f46e5; border-radius: 50%; width: 20px; height: 20px; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .task-anim { animation: slideUp 0.3s ease-out forwards; }
-        @keyframes slideUp { 
-            from { opacity: 0; transform: translateY(10px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .fade-in { animation: fadeIn 0.3s ease-in forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef, useMemo } = React;
+        const { useState, useEffect, useRef } = React;
+
+        // --- INLINE ICONS (No external library needed) ---
+        const Icons = {
+            Sparkles: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>,
+            Camera: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>,
+            Settings: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+            Refresh: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>,
+            Calendar: () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+        };
 
         const App = () => {
-            // --- 1. SETTINGS & PERSISTENCE ---
             const [keys, setKeys] = useState(() => ({
                 gemini: localStorage.getItem('tm_gemini_key') || '',
                 google: localStorage.getItem('tm_google_client_id') || ''
             }));
             const [showSettings, setShowSettings] = useState(!keys.gemini || !keys.google);
-            
-            // --- 2. GOOGLE API STATE ---
-            const [tokenClient, setTokenClient] = useState(null);
             const [accessToken, setAccessToken] = useState(null);
+            const [tokenClient, setTokenClient] = useState(null);
             const [taskLists, setTaskLists] = useState([]);
             const [selectedList, setSelectedList] = useState('');
-            
-            // --- 3. APP CONTENT STATE ---
             const [tasks, setTasks] = useState(() => JSON.parse(localStorage.getItem('tm_tasks') || '[]'));
             const [inputText, setInputText] = useState('');
             const [imagePreview, setImagePreview] = useState(null);
             const [inputImage, setInputImage] = useState(null);
-            
-            // --- 4. STATUS & LOADING ---
             const [isAnalyzing, setIsAnalyzing] = useState(false);
             const [isSyncing, setIsSyncing] = useState(false);
             const [status, setStatus] = useState({ type: '', msg: '' });
             const fileInputRef = useRef(null);
 
-            // Safety: Initialize Icons whenever major UI parts change
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
-            });
-
-            // Init Google Auth
             useEffect(() => {
                 if (window.google && keys.google) {
                     try {
@@ -87,612 +60,41 @@
                             callback: (resp) => {
                                 if (resp.access_token) {
                                     setAccessToken(resp.access_token);
-                                    fetchTaskLists(resp.access_token);
+                                    fetchLists(resp.access_token);
                                 }
-                            },
-                        });
-                        setTokenClient(client);
-                    } catch (e) { console.error("Google Auth Init Error", e); }
-                }
-            }, [keys.google]);
-
-            const showStatus = (type, msg) => {
-                setStatus({ type, msg });
-                setTimeout(() => setStatus({ type: '', msg: '' }), 5000);
-            };
-
-            const fetchTaskLists = async (token) => {
-                try {
-                    const res = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    const data = await res.json();
-                    if (data.items) {
-                        setTaskLists(data.items);
-                        setSelectedList(data.items[0].id);
-                        showStatus('success', 'Connected to Google Tasks');
-                    }
-                } catch (e) { showStatus('error', 'Failed to load task lists.'); }
-            };
-
-            const analyzeWithAI = async () => {
-                if (!keys.gemini) return setShowSettings(true);
-                if (!inputText && !inputImage) return showStatus('error', 'Add a note or photo first.');
-
-                setIsAnalyzing(true);
-                try {
-                    const today = new Date().toISOString();
-                    const prompt = `Extract specific tasks and deadlines. Today is ${today}.
-                    Return ONLY a JSON array of objects: [{"title": "Name", "due": "RFC3339_TIMESTAMP or null"}]. 
-                    If a date like "tomorrow" or "Friday" is mentioned, calculate the RFC3339 timestamp.
-                    No markdown, no extra text.`;
-
-                    const payload = {
-                        contents: [{
-                            parts: [
-                                { text: prompt + "\n\nContent to analyze: " + inputText },
-                                ...(inputImage ? [{ inlineData: { mimeType: "image/png", data: inputImage } }] : [])
-                            ]
-                        }]
-                    };
-
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keys.gemini}`, {
-                        method: 'POST',
-                        body: JSON.stringify(payload)
-                    });
-
-                    const data = await response.json();
-                    if (!data.candidates) throw new Error("Invalid AI response");
-
-                    const rawText = data.candidates[0].content.parts[0].text;
-                    const jsonMatch = rawText.match(/\[.*\]/s);
-                    
-                    if (!jsonMatch) throw new Error("No tasks found");
-                    
-                    const extracted = JSON.parse(jsonMatch[0]);
-                    const newTasks = [...tasks, ...extracted.map(t => ({ 
-                        id: Math.random().toString(36).substr(2, 9), 
-                        title: t.title, 
-                        due: t.due,
-                        checked: true 
-                    }))];
-
-                    setTasks(newTasks);
-                    localStorage.setItem('tm_tasks', JSON.stringify(newTasks));
-                    
-                    // Cleanup
-                    setInputText('');
-                    setImagePreview(null);
-                    setInputImage(null);
-                    showStatus('success', `AI extracted ${extracted.length} tasks!`);
-                } catch (e) {
-                    showStatus('error', 'AI extraction failed. Please try again.');
-                } finally {
-                    setIsAnalyzing(false);
-                }
-            };
-
-            const syncToGoogle = async () => {
-                if (!accessToken) {
-                    if (tokenClient) tokenClient.requestAccessToken();
-                    return;
-                }
-                const toSync = tasks.filter(t => t.checked);
-                if (toSync.length === 0) return;
-
-                setIsSyncing(true);
-                try {
-                    for (const task of toSync) {
-                        const body = { title: task.title };
-                        if (task.due) body.due = task.due;
-
-                        await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${selectedList}/tasks`, {
-                            method: 'POST',
-                            headers: { 
-                                Authorization: `Bearer ${accessToken}`, 
-                                'Content-Type': 'application/json' 
-                            },
-                            body: JSON.stringify(body)
-                        });
-                    }
-                    const remaining = tasks.filter(t => !t.checked);
-                    setTasks(remaining);
-                    localStorage.setItem('tm_tasks', JSON.stringify(remaining));
-                    showStatus('success', 'Tasks synced successfully!');
-                } catch (e) { 
-                    showStatus('error', 'Sync failed. Re-auth might be needed.'); 
-                } finally {
-                    setIsSyncing(false);
-                }
-            };
-
-            const createNewList = async () => {
-                const name = prompt("Enter a name for the new Google Task List:");
-                if (!name || !accessToken) return;
-                try {
-                    const res = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
-                        method: 'POST',
-                        headers: { 
-                            Authorization: `Bearer ${accessToken}`, 
-                            'Content-Type': 'application/json' 
-                        },
-                        body: JSON.stringify({ title: name })
-                    });
-                    const newList = await res.json();
-                    setTaskLists([newList, ...taskLists]);
-                    setSelectedList(newList.id);
-                    showStatus('success', `List "${name}" created!`);
-                } catch (e) { showStatus('error', 'Failed to create list.'); }
-            };
-
-            const formatDate = (iso) => {
-                if (!iso) return null;
-                const date = new Date(iso);
-                return date.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-            };
-
-            return (
-                <div className="max-w-md mx-auto min-h-screen p-5 pb-24 relative overflow-hidden">
-                    {/* Settings Modal */}
-                    {showSettings && (
-                        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[100] flex items-center justify-center p-6">
-                            <div className="bg-white w-full rounded-[2.5rem] p-8 shadow-2xl border border-slate-100">
-                                <h2 className="text-xl font-bold mb-1 text-slate-900">Configure Master</h2>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6 leading-relaxed">Stored on this device only</p>
-                                <div className="space-y-4 mb-8">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Gemini API Key</label>
-                                        <input type="password" value={keys.gemini} onChange={e => setKeys({...keys, gemini: e.target.value})} className="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Paste Gemini Key" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Google Client ID</label>
-                                        <input type="text" value={keys.google} onChange={e => setKeys({...keys, google: e.target.value})} className="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Paste Client ID" />
-                                    </div>
-                                </div>
-                                <button onClick={() => { localStorage.setItem('tm_gemini_key', keys.gemini); localStorage.setItem('tm_google_client_id', keys.google); window.location.reload(); }} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-xl shadow-indigo-100 active:scale-95 transition-all">Save & Launch</button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* App Header */}
-                    <header className="flex justify-between items-center mb-8 px-2">
-                        <div>
-                            <h1 className="text-2xl font-black text-indigo-600 tracking-tight">TaskMaster</h1>
-                            <div className="flex items-center gap-1.5">
-                                <div className={`w-2 h-2 rounded-full ${accessToken ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{accessToken ? 'Cloud Sync Active' : 'Offline Mode'}</span>
-                            </div>
-                        </div>
-                        <button onClick={() => setShowSettings(true)} className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm active:scale-90 transition-transform">
-                            <i data-lucide="settings" className="w-5 h-5"></i>
-                        </button>
-                    </header>
-
-                    {/* Notification Alert */}
-                    {status.msg && (
-                        <div className={`mb-6 p-4 rounded-[1.5rem] text-xs font-bold flex items-center gap-3 border animate-in slide-in-from-top-4 ${status.type === 'error' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
-                            <i data-lucide="info" className="w-4 h-4"></i> {status.msg}
-                        </div>
-                    )}
-
-                    {/* Capture Box */}
-                    <div className="bg-white rounded-[2.5rem] p-6 shadow-xl shadow-slate-200/50 border border-slate-50 mb-6">
-                        <textarea value={inputText} onChange={e => setInputText(e.target.value)} className="w-full h-32 border-none focus:ring-0 text-sm font-semibold placeholder:text-slate-300 resize-none bg-transparent" placeholder="Type a note or snap a photo of handwritten lists. You can mention dates like 'tomorrow'..." />
-                        
-                        {imagePreview && (
-                            <div className="relative mt-2 mb-4 task-anim">
-                                <img src={imagePreview} className="w-full h-40 object-cover rounded-[1.5rem] border border-slate-100 shadow-inner" />
-                                <button onClick={() => {setImagePreview(null); setInputImage(null)}} className="absolute top-2 right-2 bg-white/90 backdrop-blur p-2 rounded-full shadow-lg text-red-500 transition-transform hover:scale-110"><i data-lucide="trash-2" className="w-3 h-3"></i></button>
-                            </div>
-                        )}
-
-                        <div className="flex gap-3">
-                            <button onClick={() => fileInputRef.current.click()} className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-100 hover:bg-slate-100 transition-colors"><i data-lucide="camera" className="w-6 h-6"></i></button>
-                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={e => {
-                                const f = e.target.files[0];
-                                if (!f) return;
-                                const r = new FileReader();
-                                r.onloadend = () => { setImagePreview(r.result); setInputImage(r.result.split(',')[1]); };
-                                r.readAsDataURL(f);
-                            }} />
-                            
-                            <button onClick={analyzeWithAI} disabled={isAnalyzing} className="flex-1 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-xl shadow-indigo-100 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50">
-                                {isAnalyzing ? <div className="spinner"></div> : <i data-lucide="sparkles" className="w-4 h-4"></i>}
-                                <span>Extract Tasks</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Review and Export Box */}
-                    {tasks.length > 0 && (
-                        <div className="bg-white rounded-[2.5rem] p-7 shadow-xl shadow-slate-200/50 border border-slate-50 task-anim">
-                            <div className="flex justify-between items-center mb-6 px-1">
-                                <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Extracted Items</h2>
-                                <button onClick={() => { setTasks([]); localStorage.removeItem('tm_tasks'); }} className="text-[10px] font-bold text-red-400 hover:underline">Discard All</button>
-                            </div>
-
-                            <div className="space-y-2.5 mb-8 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-                                {tasks.map(t => (
-                                    <div key={t.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-transparent hover:border-indigo-100 transition-all active:scale-[0.98]">
-                                        <input type="checkbox" checked={t.checked} onChange={() => {
-                                            const u = tasks.map(i => i.id === t.id ? {...i, checked: !i.checked} : i);
-                                            setTasks(u); localStorage.setItem('tm_tasks', JSON.stringify(u));
-                                        }} className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                                        <div className="flex-1 min-w-0">
-                                            <p className={`text-[13px] font-bold leading-tight truncate ${!t.checked ? 'text-slate-300 line-through' : 'text-slate-600'}`}>{t.title}</p>
-                                            {t.due && <p className="text-[10px] font-bold text-indigo-400 mt-1 flex items-center gap-1"><i data-lucide="calendar" className="w-2.5 h-2.5"></i> {formatDate(t.due)}</p>}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="mb-6">
-                                <div className="flex justify-between items-center mb-2 px-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Google List</label>
-                                    <button onClick={createNewList} className="text-[10px] font-bold text-indigo-600 flex items-center gap-1 hover:underline"><i data-lucide="plus" className="w-3 h-3"></i> Create New</button>
-                                </div>
-                                {accessToken ? (
-                                    <div className="relative">
-                                        <select value={selectedList} onChange={e => setSelectedList(e.target.value)} className="w-full bg-slate-50 border-none rounded-xl text-[13px] font-bold text-slate-600 p-4 appearance-none focus:ring-2 focus:ring-indigo-500 outline-none">
-                                            {taskLists.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
-                                        </select>
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                            <i data-lucide="chevron-down" className="w-4 h-4"></i>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <button onClick={() => tokenClient?.requestAccessToken()} className="w-full bg-slate-50 border border-dashed border-slate-200 text-slate-400 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest">Authorize Google Sync</button>
-                                )}
-                            </div>
-
-                            <button onClick={syncToGoogle} disabled={isSyncing} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50 shadow-xl">
-                                {isSyncing ? <div className="spinner"></div> : <><i data-lucide="refresh-cw" className="w-3 h-3"></i> Sync to Google</>}
-                            </button>
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>            });
-            const [showSettings, setShowSettings] = useState(!keys.gemini || !keys.google);
-            
-            // App Logic & Sync State
-            const [tokenClient, setTokenClient] = useState(null);
-            const [accessToken, setAccessToken] = useState(null);
-            const [taskLists, setTaskLists] = useState([]);
-            const [selectedList, setSelectedList] = useState('');
-            const [tasks, setTasks] = useState(JSON.parse(localStorage.getItem('tm_tasks') || '[]'));
-            
-            // UI State
-            const [inputText, setInputText] = useState('');
-            const [imagePreview, setImagePreview] = useState(null);
-            const [inputImage, setInputImage] = useState(null);
-            const [isAnalyzing, setIsAnalyzing] = useState(false);
-            const [isSyncing, setIsSyncing] = useState(false);
-            const [status, setStatus] = useState({ type: '', msg: '' });
-            const fileInputRef = useRef(null);
-
-            // 1. Stability Fix: Refresh icons only when relevant state changes
-            useEffect(() => {
-                if (window.lucide) {
-                    window.lucide.createIcons();
-                }
-            }, [tasks, status, showSettings, imagePreview, accessToken]);
-
-            // 2. Initialize Google OAuth Client
-            useEffect(() => {
-                if (window.google && keys.google) {
-                    try {
-                        const client = google.accounts.oauth2.initTokenClient({
-                            client_id: keys.google,
-                            scope: 'https://www.googleapis.com/auth/tasks',
-                            callback: (resp) => {
-                                if (resp.access_token) {
-                                    setAccessToken(resp.access_token);
-                                    fetchTaskLists(resp.access_token);
-                                }
-                            },
-                        });
-                        setTokenClient(client);
-                    } catch (e) { console.error("Client Init Failed", e); }
-                }
-            }, [keys.google]);
-
-            const showStatus = (type, msg) => {
-                setStatus({ type, msg });
-                setTimeout(() => setStatus({ type: '', msg: '' }), 5000);
-            };
-
-            const fetchTaskLists = async (token) => {
-                try {
-                    const res = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    const data = await res.json();
-                    if (data.items) {
-                        setTaskLists(data.items);
-                        setSelectedList(data.items[0].id);
-                    }
-                } catch (e) { showStatus('error', 'Google session expired.'); }
-            };
-
-            const analyzeWithAI = async () => {
-                if (!keys.gemini) return setShowSettings(true);
-                if (!inputText && !inputImage) return showStatus('error', 'Please provide notes or a photo.');
-
-                setIsAnalyzing(true);
-                try {
-                    const today = new Date().toISOString();
-                    const prompt = `Extract tasks and deadlines. 
-                    Today's date is ${today}. 
-                    Detect dates like "tomorrow", "Friday", "Jan 10".
-                    Return ONLY a JSON array of objects: [{"title": "Buy milk", "due": "RFC3339_TIMESTAMP"}]. 
-                    If no date, "due" is null. No markdown.`;
-                    
-                    const payload = {
-                        contents: [{
-                            parts: [
-                                { text: prompt + "\n\nContent: " + inputText },
-                                ...(inputImage ? [{ inlineData: { mimeType: "image/png", data: inputImage } }] : [])
-                            ]
-                        }]
-                    };
-
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keys.gemini}`, {
-                        method: 'POST',
-                        body: JSON.stringify(payload)
-                    });
-
-                    const data = await response.json();
-                    const rawText = data.candidates[0].content.parts[0].text;
-                    const jsonMatch = rawText.match(/\[.*\]/s);
-                    
-                    if (!jsonMatch) throw new Error("No tasks found");
-                    
-                    const extracted = JSON.parse(jsonMatch[0]);
-                    const newTasks = [...tasks, ...extracted.map(t => ({ 
-                        id: Math.random().toString(36).substr(2, 9), 
-                        title: t.title, 
-                        due: t.due,
-                        checked: true 
-                    }))];
-
-                    setTasks(newTasks);
-                    localStorage.setItem('tm_tasks', JSON.stringify(newTasks));
-                    setInputText('');
-                    setImagePreview(null);
-                    setInputImage(null);
-                    showStatus('success', `Added ${extracted.length} items!`);
-                } catch (e) {
-                    showStatus('error', 'AI error. Please try again.');
-                } finally {
-                    setIsAnalyzing(false);
-                }
-            };
-
-            const syncToGoogle = async () => {
-                if (!accessToken) {
-                    if (tokenClient) tokenClient.requestAccessToken();
-                    return;
-                }
-                const toSync = tasks.filter(t => t.checked);
-                if (toSync.length === 0) return;
-
-                setIsSyncing(true);
-                try {
-                    for (const task of toSync) {
-                        const body = { title: task.title };
-                        if (task.due) body.due = task.due;
-
-                        await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${selectedList}/tasks`, {
-                            method: 'POST',
-                            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                            body: JSON.stringify(body)
-                        });
-                    }
-                    const remaining = tasks.filter(t => !t.checked);
-                    setTasks(remaining);
-                    localStorage.setItem('tm_tasks', JSON.stringify(remaining));
-                    showStatus('success', 'Tasks synced to Google!');
-                } catch (e) { showStatus('error', 'Sync failed.'); }
-                finally { setIsSyncing(false); }
-            };
-
-            const createNewList = async () => {
-                const name = prompt("Name for your new Google Task List:");
-                if (!name || !accessToken) return;
-                try {
-                    const res = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
-                        method: 'POST',
-                        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ title: name })
-                    });
-                    const newList = await res.json();
-                    setTaskLists([newList, ...taskLists]);
-                    setSelectedList(newList.id);
-                    showStatus('success', `Created list: ${name}`);
-                } catch (e) { showStatus('error', 'Failed to create list.'); }
-            };
-
-            const formatDate = (iso) => {
-                if (!iso) return null;
-                return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric' });
-            };
-
-            return (
-                <div className="max-w-md mx-auto p-5 pb-24 min-h-screen">
-                    {/* Key Setup Screen */}
-                    {showSettings && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-6">
-                            <div className="bg-white w-full rounded-[2.5rem] p-8 shadow-2xl">
-                                <h2 className="text-xl font-bold mb-1">Configuration</h2>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-6">Stored on this device only</p>
-                                <div className="space-y-4 mb-8">
-                                    <input type="password" value={keys.gemini} onChange={e => setKeys({...keys, gemini: e.target.value})} className="w-full bg-slate-100 p-4 rounded-2xl border-none text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Gemini API Key" />
-                                    <input type="text" value={keys.google} onChange={e => setKeys({...keys, google: e.target.value})} className="w-full bg-slate-100 p-4 rounded-2xl border-none text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Google Client ID" />
-                                </div>
-                                <button onClick={() => { localStorage.setItem('tm_gemini_key', keys.gemini); localStorage.setItem('tm_google_client_id', keys.google); window.location.reload(); }} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg">Save & Launch</button>
-                            </div>
-                        </div>
-                    )}
-
-                    <header className="flex justify-between items-center mb-8">
-                        <div>
-                            <h1 className="text-2xl font-black text-indigo-600">TaskMaster</h1>
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{accessToken ? 'Synced' : 'Ready'}</span>
-                        </div>
-                        <button onClick={() => setShowSettings(true)} className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm active:scale-90 transition-transform">
-                            <i data-lucide="settings" className="w-5 h-5"></i>
-                        </button>
-                    </header>
-
-                    {status.msg && (
-                        <div className={`mb-6 p-4 rounded-3xl text-xs font-bold flex items-center gap-3 border ${status.type === 'error' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
-                            <i data-lucide="info" className="w-4 h-4"></i> {status.msg}
-                        </div>
-                    )}
-
-                    <div className="bg-white rounded-[2.5rem] p-6 shadow-xl shadow-slate-200/50 border border-slate-50 mb-6">
-                        <textarea value={inputText} onChange={e => setInputText(e.target.value)} className="w-full h-32 border-none focus:ring-0 text-sm font-semibold placeholder:text-slate-300 resize-none bg-transparent" placeholder="Snap a photo of your notes or type deadlines like 'email boss by tomorrow'..." />
-                        
-                        {imagePreview && (
-                            <div className="relative mt-2 mb-4">
-                                <img src={imagePreview} className="w-full h-40 object-cover rounded-3xl border border-slate-100 shadow-inner" />
-                                <button onClick={() => {setImagePreview(null); setInputImage(null)}} className="absolute top-2 right-2 bg-white/90 backdrop-blur p-2 rounded-full shadow-lg text-red-500 hover:scale-110 transition-transform"><i data-lucide="trash-2" className="w-3 h-3"></i></button>
-                            </div>
-                        )}
-
-                        <div className="flex gap-3">
-                            <button onClick={() => fileInputRef.current.click()} className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-100 hover:bg-slate-100"><i data-lucide="camera" className="w-6 h-6"></i></button>
-                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={e => {
-                                const f = e.target.files[0];
-                                if (!f) return;
-                                const r = new FileReader();
-                                r.onloadend = () => { setImagePreview(r.result); setInputImage(r.result.split(',')[1]); };
-                                r.readAsDataURL(f);
-                            }} />
-                            
-                            <button onClick={analyzeWithAI} disabled={isAnalyzing} className="flex-1 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50">
-                                {isAnalyzing ? <div className="spinner"></div> : <i data-lucide="sparkles" className="w-4 h-4"></i>}
-                                <span>Extract Tasks</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {tasks.length > 0 && (
-                        <div className="bg-white rounded-[2.5rem] p-7 shadow-xl shadow-slate-200/50 border border-slate-50 task-card">
-                            <div className="flex justify-between items-center mb-6 px-1">
-                                <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Review</h2>
-                                <button onClick={() => { setTasks([]); localStorage.removeItem('tm_tasks'); }} className="text-[10px] font-bold text-red-400 hover:underline">Discard All</button>
-                            </div>
-
-                            <div className="space-y-2.5 mb-8 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-                                {tasks.map(t => (
-                                    <div key={t.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-transparent hover:border-indigo-100 transition-all">
-                                        <input type="checkbox" checked={t.checked} onChange={() => {
-                                            const u = tasks.map(i => i.id === t.id ? {...i, checked: !i.checked} : i);
-                                            setTasks(u); localStorage.setItem('tm_tasks', JSON.stringify(u));
-                                        }} className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                                        <div className="flex-1 min-w-0">
-                                            <p className={`text-[13px] font-bold leading-tight truncate ${!t.checked ? 'text-slate-300 line-through' : 'text-slate-600'}`}>{t.title}</p>
-                                            {t.due && <p className="text-[10px] font-bold text-indigo-400 mt-0.5 flex items-center gap-1"><i data-lucide="calendar" className="w-2.5 h-2.5"></i> {formatDate(t.due)}</p>}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="mb-6">
-                                <div className="flex justify-between items-center mb-1.5 px-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Google List</label>
-                                    <button onClick={createNewList} className="text-[10px] font-bold text-indigo-600 flex items-center gap-1 hover:underline"><i data-lucide="plus" className="w-3 h-3"></i> Create New</button>
-                                </div>
-                                {accessToken ? (
-                                    <select value={selectedList} onChange={e => setSelectedList(e.target.value)} className="w-full bg-slate-50 border-none rounded-xl text-[13px] font-bold text-slate-600 p-4 appearance-none focus:ring-2 focus:ring-indigo-500">
-                                        {taskLists.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
-                                    </select>
-                                ) : (
-                                    <button onClick={() => tokenClient.requestAccessToken()} className="w-full bg-slate-100 text-slate-400 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest">Sign in to see lists</button>
-                                )}
-                            </div>
-
-                            <button onClick={syncToGoogle} disabled={isSyncing} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50 shadow-xl">
-                                {isSyncing ? "Syncing..." : <><i data-lucide="refresh-cw" className="w-3 h-3"></i> Sync to Google</>}
-                            </button>
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>            
-            // 2. Data State
-            const [tokenClient, setTokenClient] = useState(null);
-            const [accessToken, setAccessToken] = useState(null);
-            const [taskLists, setTaskLists] = useState([]);
-            const [selectedList, setSelectedList] = useState('');
-            const [tasks, setTasks] = useState(JSON.parse(localStorage.getItem('tm_tasks') || '[]'));
-            
-            // 3. Action State
-            const [inputText, setInputText] = useState('');
-            const [imagePreview, setImagePreview] = useState(null);
-            const [inputImage, setInputImage] = useState(null);
-            const [isAnalyzing, setIsAnalyzing] = useState(false);
-            const [isSyncing, setIsSyncing] = useState(false);
-            const [status, setStatus] = useState({ type: '', msg: '' });
-            const fileInputRef = useRef(null);
-
-            // Init Google Services
-            useEffect(() => {
-                if (window.google && keys.google) {
-                    const client = google.accounts.oauth2.initTokenClient({
-                        client_id: keys.google,
-                        scope: 'https://www.googleapis.com/auth/tasks',
-                        callback: (resp) => {
-                            if (resp.access_token) {
-                                setAccessToken(resp.access_token);
-                                fetchTaskLists(resp.access_token);
                             }
-                        },
-                    });
-                    setTokenClient(client);
+                        });
+                        setTokenClient(client);
+                    } catch (e) { console.error(e); }
                 }
-                if (window.lucide) lucide.createIcons();
             }, [keys.google]);
 
             const showStatus = (type, msg) => {
                 setStatus({ type, msg });
-                setTimeout(() => setStatus({ type: '', msg: '' }), 5000);
+                setTimeout(() => setStatus({ type: '', msg: '' }), 4000);
             };
 
-            const fetchTaskLists = async (token) => {
+            const fetchLists = async (token) => {
                 try {
-                    const res = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
+                    const r = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
                         headers: { Authorization: `Bearer ${token}` }
                     });
-                    const data = await res.json();
-                    if (data.items) {
-                        setTaskLists(data.items);
-                        setSelectedList(data.items[0].id);
+                    const d = await r.json();
+                    if (d.items) {
+                        setTaskLists(d.items);
+                        setSelectedList(d.items[0].id);
                     }
-                } catch (e) { showStatus('error', 'Login expired. Please tap the user icon.'); }
+                } catch (e) { showStatus('error', 'Auth failed.'); }
             };
 
-            const analyzeWithAI = async () => {
+            const handleAnalyze = async () => {
                 if (!keys.gemini) return setShowSettings(true);
-                if (!inputText && !inputImage) return showStatus('error', 'Add a note or photo first.');
+                if (!inputText && !inputImage) return;
 
                 setIsAnalyzing(true);
                 try {
-                    const prompt = "Extract actionable tasks from this content. Return ONLY a valid JSON array of strings. Example: [\"Task 1\", \"Task 2\"]. No extra text.";
+                    const today = new Date().toISOString();
+                    const prompt = `Extract tasks from this. Today is ${today}. Return ONLY a JSON array: [{"title":"..", "due":"RFC3339_OR_NULL"}].`;
                     const payload = {
                         contents: [{
                             parts: [
@@ -702,171 +104,118 @@
                         }]
                     };
 
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keys.gemini}`, {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keys.gemini}`, {
                         method: 'POST',
                         body: JSON.stringify(payload)
                     });
 
-                    const data = await response.json();
-                    const rawText = data.candidates[0].content.parts[0].text;
+                    const data = await res.json();
+                    const raw = data.candidates[0].content.parts[0].text;
+                    const match = raw.match(/\[.*\]/s);
+                    if (!match) throw new Error("No data");
                     
-                    // Smart Parser: Finds the JSON array even if AI adds markdown
-                    const jsonMatch = rawText.match(/\[.*\]/s);
-                    if (!jsonMatch) throw new Error("No tasks detected.");
-                    
-                    const extracted = JSON.parse(jsonMatch[0]);
-                    const newTasks = [...tasks, ...extracted.map(t => ({ 
-                        id: Math.random().toString(36).substr(2, 9), 
-                        title: t, 
-                        checked: true 
-                    }))];
-
-                    setTasks(newTasks);
-                    localStorage.setItem('tm_tasks', JSON.stringify(newTasks));
-                    setInputText('');
-                    setImagePreview(null);
-                    setInputImage(null);
+                    const extracted = JSON.parse(match[0]);
+                    const newList = [...tasks, ...extracted.map(t => ({ id: Math.random().toString(36), title: t.title, due: t.due, checked: true }))];
+                    setTasks(newList);
+                    localStorage.setItem('tm_tasks', JSON.stringify(newList));
+                    setInputText(''); setImagePreview(null); setInputImage(null);
                     showStatus('success', `Found ${extracted.length} tasks!`);
-                } catch (e) {
-                    showStatus('error', 'AI extraction failed. Check your Gemini Key.');
-                } finally {
-                    setIsAnalyzing(false);
-                    setTimeout(() => window.lucide.createIcons(), 100);
-                }
+                } catch (e) { showStatus('error', 'AI extraction failed.'); }
+                finally { setIsAnalyzing(false); }
             };
 
-            const syncToGoogle = async () => {
+            const handleSync = async () => {
                 if (!accessToken) return tokenClient.requestAccessToken();
                 const toSync = tasks.filter(t => t.checked);
                 if (toSync.length === 0) return;
-
                 setIsSyncing(true);
                 try {
-                    for (const task of toSync) {
+                    for (const t of toSync) {
                         await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${selectedList}/tasks`, {
                             method: 'POST',
                             headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ title: task.title })
+                            body: JSON.stringify({ title: t.title, due: t.due || undefined })
                         });
                     }
-                    const remaining = tasks.filter(t => !t.checked);
-                    setTasks(remaining);
-                    localStorage.setItem('tm_tasks', JSON.stringify(remaining));
+                    const rem = tasks.filter(t => !t.checked);
+                    setTasks(rem);
+                    localStorage.setItem('tm_tasks', JSON.stringify(rem));
                     showStatus('success', 'Sync complete!');
                 } catch (e) { showStatus('error', 'Sync failed.'); }
                 finally { setIsSyncing(false); }
             };
 
-            const createNewList = async () => {
-                const name = prompt("Name for your new Google Task List:");
-                if (!name || !accessToken) return;
-                try {
-                    const res = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
-                        method: 'POST',
-                        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ title: name })
-                    });
-                    const newList = await res.json();
-                    setTaskLists([newList, ...taskLists]);
-                    setSelectedList(newList.id);
-                    showStatus('success', `Created list: ${name}`);
-                } catch (e) { showStatus('error', 'Failed to create list.'); }
-            };
+            const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric' }) : null;
 
             return (
-                <div className="max-w-md mx-auto p-5 pb-24 min-h-screen">
+                <div className="max-w-md mx-auto min-h-screen p-5 pb-20">
                     {showSettings && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-6">
                             <div className="bg-white w-full rounded-[2.5rem] p-8 shadow-2xl">
-                                <h2 className="text-xl font-bold mb-1">App Configuration</h2>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-6 leading-relaxed">Stored on this device only</p>
-                                <div className="space-y-4 mb-8">
-                                    <input type="password" value={keys.gemini} onChange={e => setKeys({...keys, gemini: e.target.value})} className="w-full bg-slate-100 p-4 rounded-2xl border-none text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Gemini API Key" />
-                                    <input type="text" value={keys.google} onChange={e => setKeys({...keys, google: e.target.value})} className="w-full bg-slate-100 p-4 rounded-2xl border-none text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Google Client ID" />
+                                <h2 className="text-xl font-bold mb-4">Setup</h2>
+                                <div className="space-y-4 mb-6">
+                                    <input type="password" value={keys.gemini} onChange={e => setKeys({...keys, gemini: e.target.value})} className="w-full bg-slate-100 p-4 rounded-2xl border-none text-sm outline-none" placeholder="Gemini Key" />
+                                    <input type="text" value={keys.google} onChange={e => setKeys({...keys, google: e.target.value})} className="w-full bg-slate-100 p-4 rounded-2xl border-none text-sm outline-none" placeholder="Google Client ID" />
                                 </div>
-                                <button onClick={() => { localStorage.setItem('tm_gemini_key', keys.gemini); localStorage.setItem('tm_google_client_id', keys.google); window.location.reload(); }} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg">Save & Launch</button>
+                                <button onClick={() => { localStorage.setItem('tm_gemini_key', keys.gemini); localStorage.setItem('tm_google_client_id', keys.google); window.location.reload(); }} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold">Save & Launch</button>
                             </div>
                         </div>
                     )}
 
                     <header className="flex justify-between items-center mb-8">
-                        <div>
-                            <h1 className="text-2xl font-black text-indigo-600">TaskMaster</h1>
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{accessToken ? 'Cloud Ready' : 'Local Mode'}</span>
-                        </div>
-                        <button onClick={() => setShowSettings(true)} className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm active:scale-90 transition-transform">
-                            <i data-lucide="settings" className="w-5 h-5"></i>
-                        </button>
+                        <h1 className="text-2xl font-black text-indigo-600">TaskMaster</h1>
+                        <button onClick={() => setShowSettings(true)} className="p-2 text-slate-300"><Icons.Settings /></button>
                     </header>
 
                     {status.msg && (
-                        <div className={`mb-6 p-4 rounded-3xl text-xs font-bold flex items-center gap-3 border ${status.type === 'error' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
-                            <i data-lucide="info" className="w-4 h-4"></i> {status.msg}
+                        <div className={`mb-6 p-4 rounded-3xl text-xs font-bold ${status.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                            {status.msg}
                         </div>
                     )}
 
-                    <div className="bg-white rounded-[2.5rem] p-6 shadow-xl shadow-slate-200/50 border border-slate-50 mb-6">
-                        <textarea value={inputText} onChange={e => setInputText(e.target.value)} className="w-full h-32 border-none focus:ring-0 text-sm font-semibold placeholder:text-slate-300 resize-none bg-transparent" placeholder="Type a note or take a photo of handwritten notes..." />
-                        
-                        {imagePreview && (
-                            <div className="relative mt-2 mb-4">
-                                <img src={imagePreview} className="w-full h-40 object-cover rounded-3xl border border-slate-100 shadow-inner" />
-                                <button onClick={() => {setImagePreview(null); setInputImage(null)}} className="absolute top-2 right-2 bg-white/90 backdrop-blur p-2 rounded-full shadow-lg text-red-500 hover:scale-110"><i data-lucide="trash-2" className="w-3 h-3"></i></button>
-                            </div>
-                        )}
-
+                    <div className="bg-white rounded-[2.5rem] p-6 shadow-xl border border-slate-50 mb-6">
+                        <textarea value={inputText} onChange={e => setInputText(e.target.value)} className="w-full h-32 border-none focus:ring-0 text-sm font-semibold placeholder:text-slate-300 resize-none bg-transparent" placeholder="Snap a photo or type notes..." />
+                        {imagePreview && <img src={imagePreview} className="w-full h-40 object-cover rounded-3xl mb-4" />}
                         <div className="flex gap-3">
-                            <button onClick={() => fileInputRef.current.click()} className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-100 hover:bg-slate-100"><i data-lucide="camera" className="w-6 h-6"></i></button>
+                            <button onClick={() => fileInputRef.current.click()} className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-100"><Icons.Camera /></button>
                             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={e => {
                                 const f = e.target.files[0];
-                                if (!f) return;
                                 const r = new FileReader();
                                 r.onloadend = () => { setImagePreview(r.result); setInputImage(r.result.split(',')[1]); };
                                 r.readAsDataURL(f);
                             }} />
-                            
-                            <button onClick={analyzeWithAI} disabled={isAnalyzing} className="flex-1 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50">
-                                {isAnalyzing ? <div className="spinner"></div> : <i data-lucide="sparkles" className="w-4 h-4"></i>}
-                                <span>Extract Tasks</span>
+                            <button onClick={handleAnalyze} disabled={isAnalyzing} className="flex-1 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-xl flex items-center justify-center gap-2">
+                                {isAnalyzing ? <div className="spinner"></div> : <Icons.Sparkles />}
+                                <span>Extract</span>
                             </button>
                         </div>
                     </div>
 
                     {tasks.length > 0 && (
-                        <div className="bg-white rounded-[2.5rem] p-7 shadow-xl shadow-slate-200/50 border border-slate-50 task-card">
-                            <div className="flex justify-between items-center mb-6 px-1">
-                                <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Review Items</h2>
-                                <button onClick={() => { setTasks([]); localStorage.removeItem('tm_tasks'); }} className="text-[10px] font-bold text-red-400 hover:underline">Discard All</button>
+                        <div className="bg-white rounded-[2.5rem] p-7 shadow-xl border border-slate-50 fade-in">
+                            <div className="flex justify-between mb-4">
+                                <h2 className="text-[10px] font-black uppercase text-slate-400">Review</h2>
+                                <button onClick={() => setTasks([])} className="text-[10px] font-bold text-red-400">Clear</button>
                             </div>
-
-                            <div className="space-y-2.5 mb-8 max-h-60 overflow-y-auto pr-1">
+                            <div className="space-y-3 mb-6 max-h-60 overflow-y-auto">
                                 {tasks.map(t => (
-                                    <div key={t.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-transparent hover:border-indigo-100 transition-all">
+                                    <div key={t.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
                                         <input type="checkbox" checked={t.checked} onChange={() => {
                                             const u = tasks.map(i => i.id === t.id ? {...i, checked: !i.checked} : i);
                                             setTasks(u); localStorage.setItem('tm_tasks', JSON.stringify(u));
-                                        }} className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                                        <span className={`text-[13px] font-bold flex-1 ${!t.checked ? 'text-slate-300 line-through' : 'text-slate-600'}`}>{t.title}</span>
+                                        }} className="w-5 h-5 rounded-lg text-indigo-600" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className={`text-xs font-bold truncate ${!t.checked && 'text-slate-300 line-through'}`}>{t.title}</p>
+                                            {t.due && <p className="text-[10px] font-bold text-indigo-400 flex items-center gap-1"><Icons.Calendar /> {formatDate(t.due)}</p>}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
-
-                            <div className="mb-6">
-                                <div className="flex justify-between items-center mb-1.5 px-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Google List</label>
-                                    <button onClick={createNewList} className="text-[10px] font-bold text-indigo-600 flex items-center gap-1 hover:underline"><i data-lucide="plus" className="w-3 h-3"></i> Create New</button>
-                                </div>
-                                {accessToken ? (
-                                    <select value={selectedList} onChange={e => setSelectedList(e.target.value)} className="w-full bg-slate-50 border-none rounded-xl text-[13px] font-bold text-slate-600 p-4 appearance-none focus:ring-2 focus:ring-indigo-500">
-                                        {taskLists.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
-                                    </select>
-                                ) : (
-                                    <button onClick={() => tokenClient.requestAccessToken()} className="w-full bg-slate-100 text-slate-400 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest">Sign in to see lists</button>
-                                )}
-                            </div>
-
-                            <button onClick={syncToGoogle} disabled={isSyncing} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50 shadow-xl">
-                                {isSyncing ? "Syncing..." : <><i data-lucide="refresh-cw" className="w-3 h-3"></i> Send to Google</>}
+                            <select value={selectedList} onChange={e => setSelectedList(e.target.value)} className="w-full bg-slate-50 border-none rounded-xl text-xs font-bold text-slate-600 p-4 mb-4 appearance-none">
+                                {taskLists.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+                            </select>
+                            <button onClick={handleSync} disabled={isSyncing} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-3 shadow-xl">
+                                {isSyncing ? "Syncing..." : <><Icons.Refresh /> Sync to Google</>}
                             </button>
                         </div>
                     )}
@@ -876,7 +225,6 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-        window.onload = () => { if(window.lucide) lucide.createIcons(); };
     </script>
 </body>
 </html>
