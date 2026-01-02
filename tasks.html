@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Master - Secure Cloud</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#F8FAFC]">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const App = () => {
+            // Keys stored in LocalStorage to keep GitHub code safe
+            const [keys, setKeys] = useState({
+                gemini: localStorage.getItem('tm_gemini_key') || '',
+                google: localStorage.getItem('tm_google_client_id') || ''
+            });
+            const [showSettings, setShowSettings] = useState(!keys.gemini || !keys.google);
+            
+            const [tokenClient, setTokenClient] = useState(null);
+            const [accessToken, setAccessToken] = useState(null);
+            const [taskLists, setTaskLists] = useState([]);
+            const [selectedList, setSelectedList] = useState('');
+            const [tasks, setTasks] = useState(JSON.parse(localStorage.getItem('tm_tasks') || '[]'));
+            
+            const [inputText, setInputText] = useState('');
+            const [imagePreview, setImagePreview] = useState(null);
+            const [inputImage, setInputImage] = useState(null);
+            const [isAnalyzing, setIsAnalyzing] = useState(false);
+            const [isSyncing, setIsSyncing] = useState(false);
+            const [status, setStatus] = useState({ type: '', msg: '' });
+            const fileInputRef = useRef(null);
+
+            // Initialize Google Identity
+            useEffect(() => {
+                if (window.google && keys.google) {
+                    try {
+                        const client = google.accounts.oauth2.initTokenClient({
+                            client_id: keys.google,
+                            scope: 'https://www.googleapis.com/auth/tasks',
+                            callback: (response) => {
+                                if (response.access_token) {
+                                    setAccessToken(response.access_token);
+                                    fetchTaskLists(response.access_token);
+                                }
+                            },
+                        });
+                        setTokenClient(client);
+                    } catch (e) { console.error(e); }
+                }
+            }, [keys.google]);
+
+            const saveKeys = (e) => {
+                e.preventDefault();
+                localStorage.setItem('tm_gemini_key', keys.gemini);
+                localStorage.setItem('tm_google_client_id', keys.google);
+                setShowSettings(false);
+                window.location.reload(); // Reload to init Google Client
+            };
+
+            const fetchTaskLists = async (token) => {
+                const res = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await res.json();
+                setTaskLists(data.items || []);
+                if (data.items?.length > 0) setSelectedList(data.items[0].id);
+            };
+
+            const analyzeContent = async () => {
+                if (!keys.gemini) return setShowSettings(true);
+                setIsAnalyzing(true);
+                try {
+                    const payload = {
+                        contents: [{
+                            parts: [
+                                { text: "Extract tasks as JSON array of strings: " + inputText },
+                                ...(inputImage ? [{ inlineData: { mimeType: "image/png", data: inputImage } }] : [])
+                            ]
+                        }]
+                    };
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keys.gemini}`, {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    const newStrings = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim());
+                    const updated = [...tasks, ...newStrings.map(s => ({ id: Math.random(), title: s, checked: true }))];
+                    setTasks(updated);
+                    localStorage.setItem('tm_tasks', JSON.stringify(updated));
+                    setStatus({ type: 'success', msg: `Found ${newStrings.length} tasks!` });
+                } catch (e) {
+                    setStatus({ type: 'error', msg: 'AI failed. Check your Gemini Key.' });
+                } finally {
+                    setIsAnalyzing(false);
+                    setTimeout(() => window.lucide.createIcons(), 100);
+                }
+            };
+
+            const syncToGoogle = async () => {
+                if (!accessToken) return tokenClient.requestAccessToken();
+                setIsSyncing(true);
+                try {
+                    for (const task of tasks.filter(t => t.checked)) {
+                        await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${selectedList}/tasks`, {
+                            method: 'POST',
+                            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ title: task.title })
+                        });
+                    }
+                    const remaining = tasks.filter(t => !t.checked);
+                    setTasks(remaining);
+                    localStorage.setItem('tm_tasks', JSON.stringify(remaining));
+                    setStatus({ type: 'success', msg: 'Synced to Google Tasks!' });
+                } catch (e) {
+                    setStatus({ type: 'error', msg: 'Sync failed.' });
+                } finally {
+                    setIsSyncing(false);
+                }
+            };
+
+            return (
+                <div className="max-w-md mx-auto p-6 min-h-screen relative">
+                    {/* Settings Modal */}
+                    {showSettings && (
+                        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+                            <form onSubmit={saveKeys} className="bg-white w-full rounded-[2.5rem] p-8 shadow-2xl">
+                                <h2 className="text-xl font-bold mb-2">Setup Keys</h2>
+                                <p className="text-xs text-slate-400 mb-6">These are saved only on your phone.</p>
+                                
+                                <div className="space-y-4 mb-6">
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Gemini API Key</label>
+                                        <input 
+                                            type="password"
+                                            value={keys.gemini}
+                                            onChange={e => setKeys({...keys, gemini: e.target.value})}
+                                            className="w-full bg-slate-50 p-3 rounded-xl border-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                            placeholder="Paste key here"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Google Client ID</label>
+                                        <input 
+                                            type="text"
+                                            value={keys.google}
+                                            onChange={e => setKeys({...keys, google: e.target.value})}
+                                            className="w-full bg-slate-50 p-3 rounded-xl border-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                            placeholder="Paste Client ID here"
+                                        />
+                                    </div>
+                                </div>
+                                <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100">Save & Start</button>
+                            </form>
+                        </div>
+                    )}
+
+                    <header className="flex justify-between items-center mb-8">
+                        <h1 className="text-2xl font-black text-indigo-600">TaskMaster</h1>
+                        <button onClick={() => setShowSettings(true)} className="p-2 text-slate-400 hover:text-indigo-600"><i data-lucide="settings"></i></button>
+                    </header>
+
+                    {status.msg && (
+                        <div className={`mb-6 p-4 rounded-2xl text-xs font-bold flex items-center gap-2 ${status.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                            {status.msg}
+                        </div>
+                    )}
+
+                    <div className="bg-white rounded-[2rem] p-6 shadow-xl shadow-slate-200/40 border border-slate-100 mb-6">
+                        <textarea 
+                            value={inputText}
+                            onChange={e => setInputText(e.target.value)}
+                            className="w-full h-24 border-none focus:ring-0 text-sm font-medium placeholder:text-slate-300 resize-none"
+                            placeholder="What's the plan?"
+                        />
+                        {imagePreview && <img src={imagePreview} className="w-full h-32 object-cover rounded-2xl mb-4 border" />}
+                        
+                        <div className="flex gap-2">
+                            <button onClick={() => fileInputRef.current.click()} className="flex-1 bg-slate-50 p-3 rounded-2xl flex justify-center"><i data-lucide="camera" className="w-5 h-5 text-slate-400"></i></button>
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={e => {
+                                const f = e.target.files[0];
+                                const r = new FileReader();
+                                r.onloadend = () => { setImagePreview(r.result); setInputImage(r.result.split(',')[1]); };
+                                r.readAsDataURL(f);
+                            }} />
+                            <button onClick={analyzeContent} disabled={isAnalyzing} className="flex-[3] bg-indigo-600 text-white rounded-2xl font-bold text-xs shadow-lg flex items-center justify-center gap-2">
+                                {isAnalyzing ? "..." : "Extract Tasks"}
+                            </button>
+                        </div>
+                    </div>
+
+                    {tasks.length > 0 && (
+                        <div className="bg-white rounded-[2rem] p-6 shadow-xl shadow-slate-200/40 border border-slate-100">
+                            <div className="space-y-2 mb-6">
+                                {tasks.map(t => (
+                                    <div key={t.id} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
+                                        <input type="checkbox" checked={t.checked} onChange={() => {
+                                            const u = tasks.map(i => i.id === t.id ? {...i, checked: !i.checked} : i);
+                                            setTasks(u); localStorage.setItem('tm_tasks', JSON.stringify(u));
+                                        }} className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600" />
+                                        <span className={`text-xs font-bold ${!t.checked ? 'text-slate-300 line-through' : 'text-slate-600'}`}>{t.title}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <button onClick={syncToGoogle} disabled={isSyncing} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-2">
+                                {isSyncing ? "Syncing..." : "Send to Google Tasks"}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+        window.addEventListener('load', () => lucide.createIcons());
+    </script>
+</body>
+</html>
