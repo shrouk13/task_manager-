@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TaskMaster Pro</title>
-    <!-- Production Scripts for Stability -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -17,21 +16,22 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .card-enter { animation: slideIn 0.4s ease-out forwards; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
     </style>
 </head>
 <body>
     <div id="root"></div>
-
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // Built-in Icons (Ensures no white-screen crashes from missing libraries)
         const SVG = {
             Sparkle: () => <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>,
             Camera: () => <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>,
             Settings: () => <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
             Check: () => <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>,
-            Refresh: () => <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            Refresh: () => <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>,
+            Calendar: () => <svg className="w-3 h-3 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
         };
 
         const App = () => {
@@ -53,7 +53,6 @@
             const [status, setStatus] = useState({ type: '', msg: '' });
             const fileInputRef = useRef(null);
 
-            // Initialize Google Client
             useEffect(() => {
                 if (window.google && keys.google) {
                     try {
@@ -74,7 +73,7 @@
 
             const showStatus = (type, msg) => {
                 setStatus({ type, msg });
-                setTimeout(() => setStatus({ type: '', msg: '' }), 5000);
+                setTimeout(() => setStatus({ type: '', msg: '' }), 4000);
             };
 
             const fetchLists = async (token) => {
@@ -87,17 +86,16 @@
                         setTaskLists(d.items);
                         setSelectedList(d.items[0].id);
                     }
-                } catch (e) { showStatus('error', 'Auth expired. Try again.'); }
+                } catch (e) { showStatus('error', 'Auth expired.'); }
             };
 
             const handleAnalyze = async () => {
                 if (!keys.gemini) return setShowSettings(true);
-                if (!inputText && !inputImage) return showStatus('error', 'Add text or photo first');
-
+                if (!inputText && !inputImage) return;
                 setIsAnalyzing(true);
                 try {
-                    const today = new Date().toISOString();
-                    const prompt = `Extract tasks and deadlines. Today is ${today}. Return ONLY a JSON array of objects: [{"title":"..", "due":"RFC3339_OR_NULL"}].`;
+                    const now = new Date();
+                    const prompt = `Extract tasks and specific deadlines (including time). Today is ${now.toString()}. Return ONLY a JSON array of objects: [{"title":"..", "due":"RFC3339_WITH_TIME_OR_NULL"}]. If an hour is mentioned (e.g. 5pm, 14:30), include it in the due timestamp. No markdown.`;
                     const payload = {
                         contents: [{
                             parts: [
@@ -106,30 +104,21 @@
                             ]
                         }]
                     };
-
                     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keys.gemini}`, {
                         method: 'POST',
                         body: JSON.stringify(payload)
                     });
-
                     const data = await res.json();
                     const raw = data.candidates[0].content.parts[0].text;
-                    const match = raw.match(/\[.*\]/s); // Regex for JSON array
+                    const match = raw.match(/\[.*\]/s);
                     if (!match) throw new Error("Format error");
-                    
                     const extracted = JSON.parse(match[0]);
-                    const newList = [...tasks, ...extracted.map(t => ({ 
-                        id: Math.random().toString(36), 
-                        title: t.title, 
-                        due: t.due, 
-                        checked: true 
-                    }))];
-
+                    const newList = [...tasks, ...extracted.map(t => ({ id: Math.random().toString(36), title: t.title, due: t.due, checked: true }))];
                     setTasks(newList);
                     localStorage.setItem('tm_tasks', JSON.stringify(newList));
                     setInputText(''); setImagePreview(null); setInputImage(null);
                     showStatus('success', `Added ${extracted.length} tasks!`);
-                } catch (e) { showStatus('error', 'AI Extraction failed.'); }
+                } catch (e) { showStatus('error', 'AI extraction failed.'); }
                 finally { setIsAnalyzing(false); }
             };
 
@@ -137,26 +126,28 @@
                 if (!accessToken) return tokenClient.requestAccessToken();
                 const toSync = tasks.filter(t => t.checked);
                 if (toSync.length === 0) return;
-
                 setIsSyncing(true);
                 try {
                     for (const t of toSync) {
                         await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${selectedList}/tasks`, {
                             method: 'POST',
                             headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ title: t.title, due: t.due || undefined })
+                            body: JSON.stringify({ 
+                                title: t.title, 
+                                due: t.due || undefined 
+                            })
                         });
                     }
-                    const remaining = tasks.filter(t => !t.checked);
-                    setTasks(remaining);
-                    localStorage.setItem('tm_tasks', JSON.stringify(remaining));
-                    showStatus('success', 'Sync complete!');
+                    const rem = tasks.filter(t => !t.checked);
+                    setTasks(rem);
+                    localStorage.setItem('tm_tasks', JSON.stringify(rem));
+                    showStatus('success', 'Synced successfully!');
                 } catch (e) { showStatus('error', 'Sync failed.'); }
                 finally { setIsSyncing(false); }
             };
 
             const createNewList = async () => {
-                const name = prompt("Name for your new Google Task List:");
+                const name = prompt("New List Name:");
                 if (!name || !accessToken) return;
                 try {
                     const res = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
@@ -167,29 +158,27 @@
                     const d = await res.json();
                     setTaskLists([d, ...taskLists]);
                     setSelectedList(d.id);
-                    showStatus('success', 'List created!');
-                } catch (e) { showStatus('error', 'Failed to create list.'); }
+                } catch (e) { showStatus('error', 'Failed.'); }
             };
 
-            const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric' }) : null;
+            const formatDueDate = (iso) => {
+                if (!iso) return null;
+                const date = new Date(iso);
+                const options = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+                return date.toLocaleString([], options);
+            };
 
             return (
                 <div className="max-w-md mx-auto min-h-screen p-5 pb-24">
                     {showSettings && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-6">
                             <div className="bg-white w-full rounded-[2.5rem] p-8 shadow-2xl border border-slate-100">
-                                <h2 className="text-xl font-bold mb-4 text-slate-900">Configure Keys</h2>
+                                <h2 className="text-xl font-bold mb-4">Setup</h2>
                                 <div className="space-y-4 mb-8">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-widest">Gemini API Key</label>
-                                        <input type="password" value={keys.gemini} onChange={e => setKeys({...keys, gemini: e.target.value})} className="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Paste Gemini Key" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-widest">Google Client ID</label>
-                                        <input type="text" value={keys.google} onChange={e => setKeys({...keys, google: e.target.value})} className="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Paste Client ID" />
-                                    </div>
+                                    <input type="password" value={keys.gemini} onChange={e => setKeys({...keys, gemini: e.target.value})} className="w-full bg-slate-50 p-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Gemini Key" />
+                                    <input type="text" value={keys.google} onChange={e => setKeys({...keys, google: e.target.value})} className="w-full bg-slate-50 p-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Google Client ID" />
                                 </div>
-                                <button onClick={() => { localStorage.setItem('tm_gemini_key', keys.gemini); localStorage.setItem('tm_google_client_id', keys.google); window.location.reload(); }} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-xl shadow-indigo-100 transition-all active:scale-95">Save & Launch</button>
+                                <button onClick={() => { localStorage.setItem('tm_gemini_key', keys.gemini); localStorage.setItem('tm_google_client_id', keys.google); window.location.reload(); }} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg">Save & Launch</button>
                             </div>
                         </div>
                     )}
@@ -201,35 +190,21 @@
                         <button onClick={() => setShowSettings(true)} className="p-3 text-slate-300 hover:text-indigo-600 transition-colors"><SVG.Settings /></button>
                     </header>
 
-                    {status.msg && (
-                        <div className={`mb-6 p-4 rounded-3xl text-xs font-bold flex items-center gap-3 border ${status.type === 'error' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-indigo-50 text-indigo-700 border-indigo-100'}`}>
-                            {status.msg}
-                        </div>
-                    )}
+                    {status.msg && <div className={`mb-6 p-4 rounded-3xl text-xs font-bold border ${status.type === 'error' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>{status.msg}</div>}
 
                     <div className="bg-white rounded-[2.5rem] p-6 shadow-xl border border-slate-50 mb-8">
-                        <textarea value={inputText} onChange={e => setInputText(e.target.value)} className="w-full h-32 border-none focus:ring-0 text-sm font-semibold placeholder:text-slate-300 resize-none bg-transparent" placeholder="Type notes or capture a photo of handwritten lists..." />
-                        
-                        {imagePreview && (
-                            <div className="relative mt-2 mb-4 animate-in fade-in zoom-in">
-                                <img src={imagePreview} className="w-full h-40 object-cover rounded-3xl border shadow-inner" />
-                                <button onClick={() => {setImagePreview(null); setInputImage(null)}} className="absolute top-2 right-2 bg-white/90 p-2 rounded-full shadow-lg text-red-500">×</button>
-                            </div>
-                        )}
-
-                        <div className="flex gap-3 mt-2">
-                            <button onClick={() => fileInputRef.current.click()} className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-100 hover:bg-slate-100 transition-colors"><SVG.Camera /></button>
+                        <textarea value={inputText} onChange={e => setInputText(e.target.value)} className="w-full h-32 border-none focus:ring-0 text-sm font-semibold placeholder:text-slate-300 resize-none bg-transparent" placeholder="Snap a photo or type notes with times (e.g. 'Lunch at 2pm tomorrow')..." />
+                        {imagePreview && <div className="relative mb-4"><img src={imagePreview} className="w-full h-40 object-cover rounded-3xl border shadow-inner"/><button onClick={() => {setImagePreview(null); setInputImage(null)}} className="absolute top-2 right-2 bg-white/90 p-2 rounded-full shadow-lg text-red-500">×</button></div>}
+                        <div className="flex gap-3">
+                            <button onClick={() => fileInputRef.current.click()} className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-100"><SVG.Camera /></button>
                             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={e => {
                                 const f = e.target.files[0];
-                                if (!f) return;
                                 const r = new FileReader();
                                 r.onloadend = () => { setImagePreview(r.result); setInputImage(r.result.split(',')[1]); };
                                 r.readAsDataURL(f);
                             }} />
-                            
-                            <button onClick={handleAnalyze} disabled={isAnalyzing} className="flex-1 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50">
-                                {isAnalyzing ? <div className="spinner"></div> : <SVG.Sparkle />}
-                                <span>Extract Tasks</span>
+                            <button onClick={handleAnalyze} disabled={isAnalyzing} className="flex-1 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
+                                {isAnalyzing ? <div className="spinner"></div> : <SVG.Sparkle />} <span>Extract</span>
                             </button>
                         </div>
                     </div>
@@ -237,50 +212,37 @@
                     {tasks.length > 0 && (
                         <div className="bg-white rounded-[2.5rem] p-7 shadow-xl border border-slate-50 card-enter">
                             <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Review Items</h2>
-                                <button onClick={() => { setTasks([]); localStorage.removeItem('tm_tasks'); }} className="text-[10px] font-bold text-red-400">Discard All</button>
+                                <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Review</h2>
+                                <button onClick={() => { setTasks([]); localStorage.removeItem('tm_tasks'); }} className="text-[10px] font-bold text-red-400">Clear</button>
                             </div>
-
-                            <div className="space-y-3 mb-8 max-h-60 overflow-y-auto pr-1">
+                            <div className="space-y-3 mb-8 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
                                 {tasks.map(t => (
-                                    <div key={t.id} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-transparent hover:border-indigo-100 transition-all">
-                                        <input type="checkbox" checked={t.checked} onChange={() => {
-                                            const u = tasks.map(i => i.id === t.id ? {...i, checked: !i.checked} : i);
-                                            setTasks(u); localStorage.setItem('tm_tasks', JSON.stringify(u));
-                                        }} className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-0" />
+                                    <div key={t.id} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl transition-all">
+                                        <input type="checkbox" checked={t.checked} onChange={() => { const u = tasks.map(i => i.id === t.id ? {...i, checked: !i.checked} : i); setTasks(u); localStorage.setItem('tm_tasks', JSON.stringify(u)); }} className="w-5 h-5 rounded-lg text-indigo-600 focus:ring-0" />
                                         <div className="flex-1 min-w-0">
                                             <p className={`text-xs font-bold leading-tight truncate ${!t.checked && 'text-slate-300 line-through'}`}>{t.title}</p>
-                                            {t.due && <p className="text-[10px] font-bold text-indigo-400 mt-1 uppercase tracking-tighter">Due: {formatDate(t.due)}</p>}
+                                            {t.due && <p className="text-[10px] font-bold text-indigo-400 mt-1 flex items-center gap-1"><SVG.Calendar /> {formatDueDate(t.due)}</p>}
                                         </div>
                                     </div>
                                 ))}
                             </div>
-
-                            <div className="mb-6">
-                                <div className="flex justify-between items-center mb-2 px-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Google List</label>
-                                    <button onClick={createNewList} className="text-[10px] font-bold text-indigo-600 hover:underline">Create New</button>
-                                </div>
-                                {accessToken ? (
-                                    <select value={selectedList} onChange={e => setSelectedList(e.target.value)} className="w-full bg-slate-50 border-none rounded-xl text-[13px] font-bold text-slate-600 p-4 appearance-none focus:ring-2 focus:ring-indigo-500">
-                                        {taskLists.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
-                                    </select>
-                                ) : (
-                                    <button onClick={() => tokenClient.requestAccessToken()} className="w-full bg-slate-100 text-slate-400 py-4 rounded-xl text-[10px] font-bold uppercase tracking-widest">Sign in to Sync</button>
-                                )}
+                            <div className="flex justify-between items-center mb-2 px-1">
+                                <label className="text-[10px] font-black uppercase text-slate-400">Google List</label>
+                                <button onClick={createNewList} className="text-[10px] font-bold text-indigo-600 underline">New List</button>
                             </div>
-
-                            <button onClick={handleSync} disabled={isSyncing} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl disabled:opacity-50">
-                                {isSyncing ? "Syncing..." : <><SVG.Refresh /> Sync to Google Tasks</>}
+                            <select value={selectedList} onChange={e => setSelectedList(e.target.value)} className="w-full bg-slate-50 border-none rounded-xl text-xs font-bold text-slate-600 p-4 mb-4 outline-none">
+                                {taskLists.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+                            </select>
+                            <button onClick={handleSync} disabled={isSyncing} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl">
+                                {isSyncing ? "Syncing..." : <><SVG.Refresh /> Sync to Google</>}
                             </button>
                         </div>
                     )}
                 </div>
             );
         };
-
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
 </body>
-</html>                 
+</html>
